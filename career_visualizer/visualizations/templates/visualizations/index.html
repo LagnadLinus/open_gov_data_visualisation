@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Youth Career Visualization</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> <!-- Chart.js -->
+    <style>
+        /* Basic styling for example */
+        body {
+            font-family: Arial, sans-serif;
+        }
+        .filter-section {
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Youth Career Visualization</h1>
+
+    <!-- Filters -->
+    <div class="filter-section">
+        <label for="yearRange">Year Range:</label>
+        <input type="range" id="yearRange" min="1960" max="2023" step="1" value="2023">
+        <span id="yearRangeValue">2023</span>
+    </div>
+
+    <div class="filter-section">
+        <label>Education Level:</label>
+        <input type="checkbox" id="none" value="None"> None
+        <input type="checkbox" id="tafe" value="TAFE"> TAFE
+        <input type="checkbox" id="masters" value="Masters"> Masters
+        <input type="checkbox" id="phd" value="PhD"> PhD
+    </div>
+
+    <div class="filter-section">
+        <label>Mental Health Issues:</label>
+        <input type="checkbox" id="mentalHealth" value="true"> Yes
+    </div>
+
+    <div class="filter-section">
+        <label>Crime Rate:</label>
+        <input type="checkbox" id="highCrime" value="High"> High
+        <input type="checkbox" id="mediumCrime" value="Medium"> Medium
+        <input type="checkbox" id="lowCrime" value="Low"> Low
+        <input type="checkbox" id="veryLowCrime" value="Very Low"> Very Low
+    </div>
+
+    <div class="filter-section">
+        <label for="incomeRange">Family Income Range:</label>
+        <input type="range" id="incomeRange" min="7000" max="50000" step="1000" value="50000">
+        <span id="incomeRangeValue">$50,000</span>
+    </div>
+
+    <!-- Canvas for Chart -->
+    <canvas id="youthChart" width="400" height="200"></canvas>
+
+    <script>
+        // Initial Setup for the Year and Income Range Sliders
+        const yearRange = document.getElementById('yearRange');
+        const yearRangeValue = document.getElementById('yearRangeValue');
+        const incomeRange = document.getElementById('incomeRange');
+        const incomeRangeValue = document.getElementById('incomeRangeValue');
+
+        yearRange.addEventListener('input', () => {
+            yearRangeValue.textContent = yearRange.value;
+            updateData();
+        });
+
+        incomeRange.addEventListener('input', () => {
+            incomeRangeValue.textContent = `$${incomeRange.value}`;
+            updateData();
+        });
+
+        // Chart.js: Initial Setup for Chart
+        const ctx = document.getElementById('youthChart').getContext('2d');
+        let youthChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: [], // We will update these dynamically
+                datasets: [{
+                    label: 'Family Income',
+                    data: [], // Dynamic data will be inserted here
+                    backgroundColor: [], // Dynamic color coding based on criteria
+                }]
+            },
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+
+        // Fetch Data and Update Chart Function
+        function updateData() {
+            // You can add form values here to fetch data from your backend
+            fetch('/filter/')
+                .then(response => response.json())
+                .then(data => {
+                    // Update Chart with New Data
+                    const educationLabels = data.map(item => item.education_level);
+                    const familyIncomeData = data.map(item => item.family_income);
+                    const colors = data.map(item => {
+                        // Color coding based on the provided criteria
+                        if (item.education_level === 'None' && item.family_income < 50000) {
+                            return 'red'; // Serious issues
+                        } else if (item.education_level === 'PhD' && item.family_income > 186000) {
+                            return 'green'; // Controlled areas
+                        } else if (item.education_level === 'TAFE' && item.family_income < 130000 && item.family_income > 50000) {
+                            return 'orange'; // Need to keep an eye
+                        } else if (item.education_level === 'TAFE' && item.family_income < 100000 && item.family_income > 50000) {
+                            return 'blue'; // Free education consideration
+                        } else {
+                            return 'grey'; // Default color
+                        }
+                    });
+
+                    // Update chart labels and data
+                    youthChart.data.labels = educationLabels;
+                    youthChart.data.datasets[0].data = familyIncomeData;
+                    youthChart.data.datasets[0].backgroundColor = colors;
+
+                    youthChart.update(); // Refresh chart
+                });
+        }
+
+        // Initial chart update
+        updateData();
+    </script>
+
+</body>
+</html>
